@@ -12,7 +12,7 @@ module.exports.config = {
 module.exports.handleEvent = function({ api, event }) {
   const adminIDs = [
     "61593350620579",
-    "",
+    "100028959431665",
     ""
   ].map(String);
 
