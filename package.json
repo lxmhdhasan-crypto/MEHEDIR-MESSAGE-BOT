@@ -4,8 +4,8 @@
   "description": "Made By SHAHADAT SAHU",
   "main": "Main.js",
   "engines": {
-    "node": "22.x",
-    "npm": ">=10.0.0 <13.0.0"
+    "node": "20.x",
+    "npm": ">=10.0.0 <11.0.0"
   },
   "scripts": {
     "start": "node Sahu.js",
@@ -40,7 +40,7 @@
     "@supercharge/strings": "^1.28.0",
     "agentkeepalive": "^4.3.0",
     "axios": "^1.6.0",
-    "better-sqlite3": "^9.4.0",
+    "better-sqlite3": "^11.10.0",
     "canvas": "^2.9.3",
     "cheerio": "^1.0.0-rc.12",
     "chalk": "^4.1.2",
