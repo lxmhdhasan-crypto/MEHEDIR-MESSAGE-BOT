@@ -1,44 +1,65 @@
+const request = global.nodemodule["request"];
+const fs = global.nodemodule["fs-extra"];
+const moment = require("moment-timezone");
+
 module.exports.config = {
- name: "info",
- version: "1.0.0",
- hasPermssion: 0,
- credits: "SHAHADAT SAHU",
- description: "Bot information command",
- commandCategory: "For users",
- hide: true,
- usages: "",
- cooldowns: 5,
+  name: "info",
+  version: "1.0.0",
+  hasPermssion: 0,
+  credits: "SHAHADAT SAHU",
+  description: "Bot information command",
+  commandCategory: "For users",
+  hide: true,
+  usages: "",
+  cooldowns: 5
 };
 
 module.exports.run = async function ({ api, event, args, Users, Threads }) {
- const { threadID } = event;
- const request = global.nodemodule["request"];
- const fs = global.nodemodule["fs-extra"];
- const moment = require("moment-timezone");
+  const { threadID } = event;
 
- const { configPath } = global.client;
- delete require.cache[require.resolve(configPath)];
- const config = require(configPath);
+  try {
+    // ================= CONFIG =================
+    const { configPath } = global.client;
 
- const { commands } = global.client;
- const threadSetting = (await Threads.getData(String(threadID))).data || {};
- const prefix = threadSetting.hasOwnProperty("PREFIX") ? threadSetting.PREFIX : config.PREFIX;
+    delete require.cache[require.resolve(configPath)];
+    const config = require(configPath);
 
- const uptime = process.uptime();
- const hours = Math.floor(uptime / 3600);
- const minutes = Math.floor((uptime % 3600) / 60);
- const seconds = Math.floor(uptime % 60);
+    // ================= COMMANDS =================
+    const { commands } = global.client;
 
- const totalUsers = global.data.allUserID.length;
- const totalThreads = global.data.allThreadID.length;
+    // ================= THREAD PREFIX =================
+    const threadData = await Threads.getData(String(threadID));
+    const threadSetting = threadData?.data || {};
 
- const msg = `╭⭓ ⪩ 𝐁𝐎𝐓𝐓 𝐈𝐍𝐅𝐎𝐑𝐌𝐀𝐓𝐈𝐎𝐍 ⪨
+    const prefix = Object.prototype.hasOwnProperty.call(
+      threadSetting,
+      "PREFIX"
+    )
+      ? threadSetting.PREFIX
+      : config.PREFIX;
+
+    // ================= UPTIME =================
+    const uptime = process.uptime();
+
+    const hours = Math.floor(uptime / 3600);
+    const minutes = Math.floor((uptime % 3600) / 60);
+    const seconds = Math.floor(uptime % 60);
+
+    // ================= USERS / GROUPS =================
+    const totalUsers = global.data.allUserID.length;
+    const totalThreads = global.data.allThreadID.length;
+
+    // ================= PING =================
+    const ping = Date.now() - event.timestamp;
+
+    // ================= MESSAGE =================
+    const msg = `╭⭓ ⪩ 𝐁𝐎𝐓𝐓 𝐈𝐍𝐅𝐎𝐑𝐌𝐀𝐓𝐈𝐎𝐍 ⪨
 │
 ├─ 🤖 𝗕𝗼𝘁 𝗡𝗮𝗺𝗲 : ─꯭─⃝‌‌𝐌𝐞𝐡𝐞𝐝𝐢 𝐂𝐡𝐚𝐭 𝐁𝐨𝐭
 ├─ ☢️ 𝗣𝗿𝗲𝗳𝗶𝘅 : ${config.PREFIX}
 ├─ ♻️ 𝗣𝗿𝗲𝗳𝗶𝘅 𝗕𝗼𝘅 : ${prefix}
 ├─ 🔶 𝗠𝗼𝗱𝘂𝗹𝗲𝘀 : ${commands.size}
-├─ 🔰 𝗣𝗶𝗻𝗴 : ${Date.now() - event.timestamp}ms
+├─ 🔰 𝗣𝗶𝗻𝗴 : ${ping}ms
 │
 ╰───────⭓
 
@@ -63,24 +84,66 @@ module.exports.run = async function ({ api, event, args, Users, Threads }) {
 
 ❤️ 𝗧𝗵𝗮𝗻𝗸𝘀 𝗳𝗼𝗿 𝘂𝘀𝗶𝗻𝗴 🌺
  😍─꯭─⃝‌‌𝐌𝐞𝐡𝐞𝐝𝐢 𝐂𝐡𝐚𝐭 𝐁𝐨𝐭😘`;
- 
-// 🔹 এখানে আপনার ফটো Imgur লিংক করে বসাবেন ✅
 
- const imgLinks = [
-    "https://i.imgur.com/3WHqHJG.jpeg",
-    "",
-    "",
-    ""
- ];
+    // ================= CACHE =================
+    const cacheDir = __dirname + "/cache";
+    const imagePath = cacheDir + "/info.jpg";
 
- const imgLink = imgLinks[Math.floor(Math.random() * imgLinks.length)];
+    await fs.ensureDir(cacheDir);
 
- const callback = () => {
- api.sendMessage({
- body: msg,
- attachment: fs.createReadStream(__dirname + "/cache/info.jpg")
- }, threadID, () => fs.unlinkSync(__dirname + "/cache/info.jpg"));
- };
+    // ================= IMAGE =================
+    // শুধু valid image URL রাখা হয়েছে
+    const imgLinks = [
+      "https://i.imgur.com/3WHqHJG.jpeg"
+    ];
 
- return request(encodeURI(imgLink)).pipe(fs.createWriteStream(__dirname + "/cache/info.jpg")).on("close", callback);
+    const imgLink =
+      imgLinks[Math.floor(Math.random() * imgLinks.length)];
+
+    // ================= DOWNLOAD IMAGE =================
+    request
+      .get(imgLink)
+      .on("error", (error) => {
+        console.error("INFO IMAGE ERROR:", error);
+
+        return api.sendMessage(
+          msg,
+          threadID
+        );
+      })
+      .pipe(fs.createWriteStream(imagePath))
+      .on("finish", () => {
+        api.sendMessage(
+          {
+            body: msg,
+            attachment: fs.createReadStream(imagePath)
+          },
+          threadID,
+          (err) => {
+            // message পাঠানোর পর cache file delete
+            fs.unlink(imagePath).catch(() => {});
+
+            if (err) {
+              console.error("INFO SEND ERROR:", err);
+            }
+          }
+        );
+      })
+      .on("error", (error) => {
+        console.error("INFO WRITE ERROR:", error);
+
+        return api.sendMessage(
+          msg,
+          threadID
+        );
+      });
+
+  } catch (error) {
+    console.error("INFO COMMAND ERROR:", error);
+
+    return api.sendMessage(
+      "❌ Info command চালাতে সমস্যা হয়েছে।",
+      threadID
+    );
+  }
 };
